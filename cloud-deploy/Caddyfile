@@ -1,0 +1,30 @@
+# 有域名时的自动 HTTPS 反代（Caddy 会自动申请并续期 Let's Encrypt 证书）
+#
+# 前置条件：域名已解析到本机公网 IP
+# 安装 Caddy：apt install -y caddy   （或参考 https://caddyserver.com/docs/install）
+# 启用： cp Caddyfile /etc/caddy/Caddyfile && systemctl reload caddy
+#
+# 注意：挂了反代之后，请把服务端的 FORCE_HTTPS=1 打开，
+#       或在 nginx/caddy 里带上 X-Forwarded-Proto: https（Caddy 默认就带）
+
+menggui.example.com {
+	encode gzip
+
+	reverse_proxy 127.0.0.1:8080 {
+		header_up X-Forwarded-Proto {scheme}
+	}
+
+	# 轻量抗压：单 IP 限流，防止被刷
+	# request_body {
+	# 	max_size 1MB
+	# }
+
+	log {
+		output file /var/log/caddy/menggui.log
+	}
+}
+
+# 如果暂时没有域名、只想用 IP 访问，把上面整段换成下面这样（纯端口转发，无 TLS）：
+# :8080 {
+# 	reverse_proxy 127.0.0.1:9000
+# }

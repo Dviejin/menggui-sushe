@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: menggui-sushe
+    runtime: node
+    region: singapore
+    plan: free
+    branch: main
+    healthCheckPath: /api/ping
+    pullRequestPreviewsEnabled: false
+
+    buildCommand: echo "零依赖，无需构建"
+
+    # server.js 会自动向上查找 ../index.html，因此从仓库根目录启动子目录里的脚本即可
+    startCommand: node server/server.js
+
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "8080"
+
+# ------------------------------------------------------------------
+# ⚠️ 免费层的两个坑，务必读：
+#  1. 15 分钟无访问即冻结进程，下次进来要等几十秒冷启动；
+#     冻结意味着内存里的房间全部丢失。
+#  2. 想常驻请改成 plan: starter（约 $7/月）。
+#  另外 Render 没有中国大陆节点，国内访问延迟通常 80–150ms。
+#  追求低延迟与稳定，请改用「GitHub Actions + 国内轻量服务器」，
+#  见 cloud-deploy/GitHub部署.md 方案 A。
+# ------------------------------------------------------------------

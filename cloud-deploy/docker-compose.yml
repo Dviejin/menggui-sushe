@@ -1,0 +1,24 @@
+services:
+  menggui:
+    build: .
+    image: menggui-sushe:latest
+    container_name: menggui-sushe
+    restart: always          # 崩溃自动拉起
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      # 若前面挂了 Nginx/Caddy 做 HTTPS 反代，把它设成 1
+      # - FORCE_HTTPS=1
+    deploy:
+      replicas: 1            # 房间在内存里，必须单副本
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/api/ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

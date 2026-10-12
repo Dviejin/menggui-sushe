@@ -1,0 +1,15 @@
+{
+  "description": "猛鬼宿舍仿制版（学习用途）",
+  "appid": "touristappid",
+  "projectname": "menggui-sushe",
+  "miniprogramRoot": "./",
+  "compileType": "game",
+  "setting": {
+    "es6": true,
+    "enhance": false,
+    "postcss": false,
+    "minified": true,
+    "urlCheck": false
+  },
+  "condition": {}
+}

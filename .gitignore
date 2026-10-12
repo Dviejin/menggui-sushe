@@ -1,0 +1,19 @@
+node_modules/
+npm-debug.log*
+.DS_Store
+Thumbs.db
+*.log
+
+# 本地验证/安装产生的临时产物
+cloud-deploy/.check.txt
+cloud-deploy/.out.txt
+cloud-deploy/.err.txt
+.gh.zip
+.ghcheck.txt
+.winget.log
+
+# 便携版 GitHub CLI（我已下载解压在此，约 15MB，不要提交）
+.ghcli/
+
+# WorkBuddy 工程数据
+.workbuddy/
