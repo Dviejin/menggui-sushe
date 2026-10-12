@@ -15,5 +15,8 @@ cloud-deploy/.err.txt
 # 便携版 GitHub CLI（我已下载解压在此，约 15MB，不要提交）
 .ghcli/
 
+# 走 API 推送的辅助脚本（本环境 git over https 被阻断时使用，无需入库）
+.push-api.js
+
 # WorkBuddy 工程数据
 .workbuddy/
