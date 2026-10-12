@@ -21,35 +21,10 @@
 
 仓库地址：**<https://github.com/Dviejin/menggui-sushe>**（Public）。
 
-25 个文件已经全部推上去了，并与本地做过逐字节比对，内容完全一致。
-唯一还差的是 `.github/workflows/deploy.yml` —— 原因见下。
+26 个文件（含 `.github/workflows/deploy.yml`）已全部推上去，并与本地做过逐字节比对，内容完全一致。
+GitHub 已识别该工作流：仓库 **Actions** 标签页能看到「部署联机服务器」，状态 **active**。
 
-### 2. 你只需要做这一件事：把工作流文件补上（1 分钟）
-
-GitHub 规定：**写 `.github/workflows/` 下的文件需要 token 额外具备 `workflow` 权限**。
-之前用的令牌只勾了 `repo`，GitHub 会故意返回 404（而不是 403）来拒绝，
-所以这个文件我推不上去，得由你这边完成。两种办法，随便挑一个：
-
-#### 办法 1：在 GitHub 网页上建（推荐，不用再生成令牌）
-
-1. 打开 <https://github.com/Dviejin/menggui-sushe> → 点右上角绿色 **Code** 按钮旁边的 **Add file** → **Create new file**
-2. 文件名框里**完整输入**这一串（GitHub 会自动把斜杠变成目录）：
-   ```
-   .github/workflows/deploy.yml
-   ```
-3. 用编辑器打开本机的 `D:\1-微信文件\2026-10-09-14-12-01\menggui-sushe\.github\workflows\deploy.yml`，
-   **全选复制 → 粘贴**到网页的编辑框里
-4. 拉到最下面，点 **Commit changes**（直接提交到 main 即可）
-
-#### 办法 2：重新生成一个带 workflow 权限的令牌
-
-打开下面这个链接（权限已预填好，拉到最下面点 Generate token）：
-
-<https://github.com/settings/tokens/new?scopes=repo,workflow&description=menggui-deploy>
-
-把生成的 `ghp_` 开头的令牌发给我，剩下的我来做。
-
-### 3. 把本地仓库和远端对齐（让以后的 `git push` 能用）
+### 2. 把本地仓库和远端对齐（让以后的 `git push` 能用）
 
 远端的文件是我通过 API 直接写的，和本地仓库的历史不是同一条线。在你自己的 PowerShell 里跑一遍即可拉齐：
 
@@ -67,20 +42,20 @@ git push -u origin main
 > 如果 `git fetch`/`git push` 在你这儿也报 `schannel: server closed abruptly` 之类网络错误，
 > 那就走办法 1 上传工作流文件，日常改动发给我、我走 API 推送即可。
 
-### 4. 生成一对专用 SSH 密钥（给 GitHub 用，不要用自己的老密钥）
+### 3. 生成一对专用 SSH 密钥（给 GitHub 用，不要用自己的老密钥）
 
 ```powershell
 ssh-keygen -t ed25519 -C "github-deploy" -f "$env:USERPROFILE\.ssh\gh_deploy"
 ```
 一路回车，不要设密码。
 
-### 5. 把公钥放到服务器上（让 GitHub 有权限登录）
+### 4. 把公钥放到服务器上（让 GitHub 有权限登录）
 
 ```powershell
 type "$env:USERPROFILE\.ssh\gh_deploy.pub" | ssh root@你的公网IP "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys && chmod 700 ~/.ssh && chmod 600 ~/.ssh/authorized_keys"
 ```
 
-### 6. 把私钥告诉 GitHub
+### 5. 把私钥告诉 GitHub
 
 ```powershell
 Get-Content "$env:USERPROFILE\.ssh\gh_deploy" | Set-Clipboard
@@ -97,7 +72,7 @@ Get-Content "$env:USERPROFILE\.ssh\gh_deploy" | Set-Clipboard
 
 > 可选：Settings → Secrets and variables → Actions → **Variables** 里加 `SERVER_PORT`（不填默认 8080）。
 
-### 7. 完事 —— 试一下
+### 6. 完事 —— 试一下
 
 以后改完游戏只要三步：
 
