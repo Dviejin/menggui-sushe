@@ -17,74 +17,70 @@
 
 我已经把流水线写好了，就在 `.github/workflows/deploy.yml`。本地仓库也已初始化好。
 
-### 1. 在 GitHub 建个仓库
+### 1. 仓库已建好 ✅
 
-浏览器打开 <https://github.com/new> ，Repository name 填 **`menggui-sushe`**，
-Visibility 选 Public（或 Private，私有仓库 Actions 每月也有 2000 分钟免费额度），
-**不要勾选**添加 README / .gitignore / License（本地已经有了），然后 Create repository。
+仓库地址：**<https://github.com/Dviejin/menggui-sushe>**（Public）。
 
-> 用户名：`Dviejin`，仓库名：`menggui-sushe`，下面所有命令都已按这个填好，直接复制即可。
-> 本地的 `git remote` 也已经配好了，所以你创建完仓库后**只需要执行最后那条 push**。
-> 你的仓库地址：<https://github.com/Dviejin/menggui-sushe>
+25 个文件已经全部推上去了，并与本地做过逐字节比对，内容完全一致。
+唯一还差的是 `.github/workflows/deploy.yml` —— 原因见下。
 
-### 2. 推上去（两种方式，任选一种）
+### 2. 你只需要做这一件事：把工作流文件补上（1 分钟）
 
-#### 方式 1：用项目里自带的 GitHub CLI（推荐，免安装）
+GitHub 规定：**写 `.github/workflows/` 下的文件需要 token 额外具备 `workflow` 权限**。
+之前用的令牌只勾了 `repo`，GitHub 会故意返回 404（而不是 403）来拒绝，
+所以这个文件我推不上去，得由你这边完成。两种办法，随便挑一个：
 
-我已经把 GitHub CLI 下载解压到项目里了（在 `.ghcli/`，约 15MB，已被 .gitignore 排除不会提交）。
-直接复制这两条：
+#### 办法 1：在 GitHub 网页上建（推荐，不用再生成令牌）
+
+1. 打开 <https://github.com/Dviejin/menggui-sushe> → 点右上角绿色 **Code** 按钮旁边的 **Add file** → **Create new file**
+2. 文件名框里**完整输入**这一串（GitHub 会自动把斜杠变成目录）：
+   ```
+   .github/workflows/deploy.yml
+   ```
+3. 用编辑器打开本机的 `D:\1-微信文件\2026-10-09-14-12-01\menggui-sushe\.github\workflows\deploy.yml`，
+   **全选复制 → 粘贴**到网页的编辑框里
+4. 拉到最下面，点 **Commit changes**（直接提交到 main 即可）
+
+#### 办法 2：重新生成一个带 workflow 权限的令牌
+
+打开下面这个链接（权限已预填好，拉到最下面点 Generate token）：
+
+<https://github.com/settings/tokens/new?scopes=repo,workflow&description=menggui-deploy>
+
+把生成的 `ghp_` 开头的令牌发给我，剩下的我来做。
+
+### 3. 把本地仓库和远端对齐（让以后的 `git push` 能用）
+
+远端的文件是我通过 API 直接写的，和本地仓库的历史不是同一条线。在你自己的 PowerShell 里跑一遍即可拉齐：
 
 ```powershell
 cd D:\1-微信文件\2026-10-09-14-12-01\menggui-sushe
-.\.ghcli\bin\gh.exe auth login --web
-```
-
-第一条命令会给你一个**一次性码**（形如 `ABCD-1234`），它还会提示按回车打开浏览器。
-去 <https://github.com/login/device> 输入这个码并点授权，回来就登录好了。
-
-```powershell
-.\.ghcli\bin\gh.exe repo create menggui-sushe --public --source=. --remote=origin --push
-```
-
-第二条会自动建仓、连远端、推送代码，一步到位。
-想建私有仓库就把 `--public` 换成 `--private`。
-
-#### 方式 2：自己建仓库 + 纯 git push
-
-到 <https://github.com/new> 建一个空仓库（name 填 `menggui-sushe`，**别勾选** README/.gitignore/License），
-远端我已经配好了，你只要：
-
-```powershell
-cd D:\1-微信文件\2026-10-09-14-12-01\menggui-sushe
+git fetch origin main
+git reset --soft origin/main
+git add -A
+git commit -m "对齐远端仓库"
 git push -u origin main
 ```
 
-> **第一次 push 的认证**，按出现的情况处理：
-> - 弹出 GitHub 登录窗口 / 浏览器 → 直接授权即可（你已经登录过，通常点一下就过）
-> - 提示输入用户名密码 → 密码框要填的是 **Personal Access Token**，不是账号密码。
->   到 <https://github.com/settings/tokens> → Generate new token (classic) → 勾选 **repo** → 生成后粘贴进去
-> - 一直卡在 `Logon failed` → 用这条一次性命令（把 `<TOKEN>` 换成刚生成的令牌）：
->   ```powershell
->   git push https://Dviejin:<TOKEN>@github.com/Dviejin/menggui-sushe.git main
->   ```
+跑完 `git status` 应该是干净的，之后你改完游戏直接 `git add -A && git commit -m "..." && git push` 就行。
 
-> 说明：本来可以装 GitHub CLI 一条命令搞定，但这台机器连 GitHub 下载通道不通
-> （winget 和直连 release CDN 都会超时），所以走上面这条同样只需 1 分钟的路。
+> 如果 `git fetch`/`git push` 在你这儿也报 `schannel: server closed abruptly` 之类网络错误，
+> 那就走办法 1 上传工作流文件，日常改动发给我、我走 API 推送即可。
 
-### 3. 生成一对专用 SSH 密钥（给 GitHub 用，不要用自己的老密钥）
+### 4. 生成一对专用 SSH 密钥（给 GitHub 用，不要用自己的老密钥）
 
 ```powershell
 ssh-keygen -t ed25519 -C "github-deploy" -f "$env:USERPROFILE\.ssh\gh_deploy"
 ```
 一路回车，不要设密码。
 
-### 4. 把公钥放到服务器上（让 GitHub 有权限登录）
+### 5. 把公钥放到服务器上（让 GitHub 有权限登录）
 
 ```powershell
 type "$env:USERPROFILE\.ssh\gh_deploy.pub" | ssh root@你的公网IP "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys && chmod 700 ~/.ssh && chmod 600 ~/.ssh/authorized_keys"
 ```
 
-### 5. 把私钥告诉 GitHub
+### 6. 把私钥告诉 GitHub
 
 ```powershell
 Get-Content "$env:USERPROFILE\.ssh\gh_deploy" | Set-Clipboard
@@ -101,7 +97,7 @@ Get-Content "$env:USERPROFILE\.ssh\gh_deploy" | Set-Clipboard
 
 > 可选：Settings → Secrets and variables → Actions → **Variables** 里加 `SERVER_PORT`（不填默认 8080）。
 
-### 6. 完事 —— 试一下
+### 7. 完事 —— 试一下
 
 以后改完游戏只要三步：
 
@@ -122,7 +118,7 @@ GitHub 会自动：上传文件 → 在服务器跑 install.sh → 做健康检�
 
 仓库根目录的 `render.yaml` 就是给 Render 用的「Blueprint」配置。流程：
 
-1. 把代码推到 GitHub（同上第 1–2 步）
+1. 代码已经在仓库里了，这步跳过
 2. 打开 <https://dashboard.render.com/blueprints> → New Blueprint Instance → 选中你的仓库
 3. 一路下一步，它会自动识别 `render.yaml` 并部署
 
