@@ -1,0 +1,84 @@
+name: 部署联机服务器
+
+# 触发：推送到 main 且改动涉及游戏本体/服务端时；也可在网页手动点 Run workflow
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'server/**'
+      - 'cloud-deploy/install.sh'
+      - '.github/workflows/deploy.yml'
+  workflow_dispatch:
+
+env:
+  REMOTE_HOST: ${{ secrets.SERVER_HOST }}
+  REMOTE_USER: ${{ secrets.SERVER_USER || 'root' }}
+  APP_PORT:    ${{ vars.SERVER_PORT || '8080' }}
+  REMOTE_DIR:  menggui-sushe
+
+jobs:
+  deploy:
+    name: 推送并安装
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 校验必需配置
+        run: |
+          if [ -z "$REMOTE_HOST" ]; then
+            echo "::error::缺少 Secret SERVER_HOST（服务器公网 IP）"
+            exit 1
+          fi
+          if [ -z "${{ secrets.SSH_PRIVATE_KEY }}" ]; then
+            echo "::error::缺少 Secret SSH_PRIVATE_KEY（登录私钥）"
+            exit 1
+          fi
+
+      - name: 配置 SSH 私钥
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "$REMOTE_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+          echo "SSH_KEY_PATH=$HOME/.ssh/deploy_key" >> "$GITHUB_ENV"
+
+      - name: 准备远端目录
+        run: ssh -i "$SSH_KEY_PATH" "$REMOTE_USER@$REMOTE_HOST" "mkdir -p ~/$REMOTE_DIR/server ~/$REMOTE_DIR/cloud-deploy"
+
+      - name: 上传文件
+        run: |
+          scp -i "$SSH_KEY_PATH" index.html          "$REMOTE_USER@$REMOTE_HOST:~/$REMOTE_DIR/index.html"
+          scp -i "$SSH_KEY_PATH" server/server.js    "$REMOTE_USER@$REMOTE_HOST:~/$REMOTE_DIR/server/server.js"
+          scp -i "$SSH_KEY_PATH" cloud-deploy/install.sh "$REMOTE_USER@$REMOTE_HOST:~/$REMOTE_DIR/cloud-deploy/install.sh"
+
+      - name: 判断是否 root 账号
+        run: |
+          IS_ROOT=$(ssh -i "$SSH_KEY_PATH" "$REMOTE_USER@$REMOTE_HOST" '[ "$(id -u)" = 0 ] && echo yes || echo no')
+          echo "IS_ROOT=$IS_ROOT" >> "$GITHUB_ENV"
+
+      - name: 执行服务端部署
+        run: |
+          SUDO=""
+          [ "$IS_ROOT" = "yes" ] || SUDO="sudo"
+          ssh -i "$SSH_KEY_PATH" "$REMOTE_USER@$REMOTE_HOST" \
+            "chmod +x ~/$REMOTE_DIR/cloud-deploy/install.sh && cd ~/$REMOTE_DIR/cloud-deploy && PORT=$APP_PORT $SUDO bash install.sh"
+
+      - name: 部署后健康检查
+        run: |
+          echo "等待服务就绪..."
+          for i in $(seq 1 10); do
+            if body=$(ssh -i "$SSH_KEY_PATH" "$REMOTE_USER@$REMOTE_HOST" "curl -fsS --max-time 5 http://127.0.0.1:$APP_PORT/api/ping" 2>/dev/null); then
+              echo "健康检查通过： $body"
+              echo "### 部署成功" >> "$GITHUB_STEP_SUMMARY"
+              echo "" >> "$GITHUB_STEP_SUMMARY"
+              echo "游戏链接：**http://$REMOTE_HOST:$APP_PORT**" >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            sleep 3
+          done
+          echo "::error::服务未响应，请到服务器上执行 journalctl -u menggui -n 50 查看日志"
+          exit 1
